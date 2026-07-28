@@ -1,0 +1,33 @@
+schemaVersion: "1"
+name: okteto
+displayName: okteto
+description: Give your sandbox an isolated, production-like environment on your infrastructure to build, test, and verify against real services and data
+kind: mixin
+caps:
+ network:
+   allow:
+    - demo.okteto.dev
+    - "*.demo.okteto.dev"
+    - get.okteto.com
+    - downloads.okteto.com
+
+# Maps the Okteto API domain to the "okteto" secret registered on the host with
+# `sbx secret set-custom`, and tells the proxy which header to inject it into.
+# The token value is NOT declared here and never enters the sandbox.
+network:
+  serviceDomains:
+    demo.okteto.dev: okteto
+  serviceAuth:
+    okteto:
+      headerName: Authorization
+      valueFormat: "Bearer %s"
+
+commands:
+  install:
+  - description: Install Okteto
+    command: "curl -L https://downloads.okteto.com/cli/stable/3.21.0/okteto-Linux-arm64 -o /usr/local/bin/okteto && chmod +x /usr/local/bin/okteto && okteto version"
+
+environment:
+  variables:
+    # Not a secret, and it must match caps.network.allow, so it stays static.
+    OKTETO_CONTEXT: https://demo.okteto.dev
