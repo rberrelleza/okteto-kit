@@ -25,7 +25,25 @@ network:
 commands:
   install:
   - description: Install Okteto
-    command: "curl -L https://downloads.okteto.com/cli/stable/3.21.0/okteto-Linux-arm64 -o /usr/local/bin/okteto && chmod +x /usr/local/bin/okteto && okteto version"
+    # Bump OKTETO_VERSION to upgrade. Asset suffixes are x86_64 and arm64,
+    # which do not match `uname -m` one-for-one, hence the case mapping.
+    # Deliberately `set -eu` and not `set -euo pipefail`: install commands run
+    # via `sh -c`, and /bin/sh on Debian/Ubuntu is dash, which has no pipefail.
+    command: |
+      set -eu
+      OKTETO_VERSION=3.21.0
+      case "$(uname -m)" in
+        x86_64)  ARCH=x86_64 ;;
+        aarch64|arm64) ARCH=arm64 ;;
+        *) echo "unsupported sandbox arch: $(uname -m) (expected x86_64 or aarch64)" >&2; exit 1 ;;
+      esac
+      URL="https://downloads.okteto.com/cli/stable/${OKTETO_VERSION}/okteto-Linux-${ARCH}"
+      curl --proto '=https' --tlsv1.2 -fsSL -o /tmp/okteto "$URL"
+      curl --proto '=https' --tlsv1.2 -fsSL -o /tmp/okteto.sha256 "${URL}.sha256"
+      echo "$(awk '{print $1}' /tmp/okteto.sha256)  /tmp/okteto" | sha256sum -c -
+      install -m 0755 /tmp/okteto /usr/local/bin/okteto
+      rm -f /tmp/okteto /tmp/okteto.sha256
+      okteto version
 
 environment:
   variables:
