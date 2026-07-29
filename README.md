@@ -59,11 +59,10 @@ caps:
    allow:
     - okteto.example.com        # was demo.okteto.dev
     - "*.okteto.example.com"    # was "*.demo.okteto.dev"
-    - get.okteto.com            # leave as-is
     - downloads.okteto.com      # leave as-is
 ```
 
-`get.okteto.com` and `downloads.okteto.com` are Okteto's public download hosts. Leave them alone, the install step needs them.
+`downloads.okteto.com` is where the install step fetches the CLI binary and its checksum. Leave it alone.
 
 **3. `network.serviceDomains`**, the map key:
 
@@ -255,7 +254,7 @@ If they disagree, the request goes out carrying the placeholder and Okteto corre
 Connection refused, DNS failure, or a proxy denial means the host is not on the allow list. `caps.network.allow` is deny-by-default. Check that you added **both** the apex and the wildcard, because `*.okteto.example.com` does not match `okteto.example.com`. Symptom split: apex missing breaks `okteto` commands themselves, wildcard missing breaks reaching your deployed app's endpoints. `sbx policy ls` shows the active rules.
 
 **The CLI install fails during sandbox creation.**
-The install step needs `downloads.okteto.com` reachable. If you replaced all four entries in `caps.network.allow` instead of the first two, put `get.okteto.com` and `downloads.okteto.com` back.
+The install step needs `downloads.okteto.com` reachable. If you replaced every entry in `caps.network.allow` instead of just the first two, put `downloads.okteto.com` back.
 
 **Downloads through your Okteto host are corrupted or truncated.**
 You put a wildcard in `network.serviceDomains`. Use the apex only. See [Two rules that are easy to get wrong](#two-rules-that-are-easy-to-get-wrong).

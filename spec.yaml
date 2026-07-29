@@ -8,7 +8,6 @@ caps:
    allow:
     - demo.okteto.dev
     - "*.demo.okteto.dev"
-    - get.okteto.com
     - downloads.okteto.com
 
 # Maps the Okteto API domain to the "okteto" secret registered on the host with
