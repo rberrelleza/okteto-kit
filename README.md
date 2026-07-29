@@ -186,6 +186,38 @@ okteto context use https://okteto.example.com
 
 If `okteto context use` succeeds, the CLI reached your instance and the proxy injected a valid token. From there the agent can run `okteto deploy`, `okteto test`, `okteto exec`, and the rest against a real environment.
 
+## Testing
+
+`test/e2e.sh` is a manual end-to-end test. It creates a real sandbox with the kit applied, then verifies from inside it that the CLI installed for the right architecture and that the proxy actually substitutes your token. There is no CI for this yet, it is run by hand.
+
+```bash
+test/e2e.sh                 # or: test/e2e.sh my-sandbox-name
+```
+
+It reads the host from `OKTETO_CONTEXT` in `spec.yaml`, so it follows whatever instance the kit points at. You do not edit the test after changing the domain.
+
+Seven steps, ordered so a failure localizes itself:
+
+1. Environment: `sbx` version, kit commit, host architecture, resolved instance
+2. Confirms a custom secret is registered for your host
+3. Removes any previous sandbox of the same name
+4. Creates the sandbox with `--kit`, running the real install command
+5. Inside the sandbox: architecture, `$OKTETO_CONTEXT`, and that `$OKTETO_TOKEN` is a placeholder rather than empty, the `proxy-managed` sentinel, or a leaked real token
+6. `okteto context use`, the actual proxy-substitution test, then `okteto namespace list` to prove the token authenticated rather than merely completing a handshake
+7. `sbx policy log`, which should show your Okteto host as `forward` (intercepted, so the `Authorization` header can be injected) and `downloads.okteto.com` as `forward-bypass`
+
+Output is also written to `test/e2e.log`. Clean up afterwards with `sbx rm -f okteto-e2e`.
+
+### Run it from a GUI session on macOS
+
+The `sbx` CLI reads the Docker Hub token and custom secrets from the macOS login keychain itself. A process in an SSH or background session cannot prompt for keychain access, so any command that touches credentials fails with:
+
+```
+ERROR: list custom secrets: cannot prompt the user for password
+```
+
+Run the test from the physical console or a screen-sharing session. This is a macOS session-isolation constraint, not something the kit or `sbx` configuration can change: Docker's `credsStore` setting only redirects the Docker CLI, not `sbx`.
+
 ## What the kit installs
 
 **Okteto CLI 3.21.0**, pinned in `spec.yaml`. Bump `OKTETO_VERSION` in the install command to upgrade. The install step detects the sandbox architecture (`x86_64` and `aarch64`/`arm64`, mapped to Okteto's `x86_64` and `arm64` asset names), downloads the matching Linux binary from `downloads.okteto.com`, and verifies it against the published `.sha256` before installing. An unsupported architecture fails loudly instead of installing nothing.
